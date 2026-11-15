@@ -7,7 +7,7 @@
 *.so
 *.dylib
 *.test
-*.out
+*.compressed
 **/*.exe
 **/*.deb
 **/*.o
@@ -34,7 +34,7 @@ go.work.sum
 *.test
 *.prof
 *.coverprofile
-coverage.out
+coverage.compressed
 coverage.html
 
 # ============================================================
