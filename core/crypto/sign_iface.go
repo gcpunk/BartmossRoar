@@ -14,7 +14,6 @@ type Signer interface {
 	// 确保 string(ctx) 安全
 	Sign(msg []byte, ctx []byte) ([]byte, error)
 	PublicKey() PublicKey
-	KeySize() int
 }
 
 type PublicKey interface {

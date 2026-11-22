@@ -1,7 +1,6 @@
 package mldsa
 
 import (
-	"errors"
 	"fmt"
 
 	"github.com/cloudflare/circl/sign/mldsa/mldsa87"
@@ -56,7 +55,7 @@ func (m87v *Mldsa87Verifyer) Algorithm() crypto.SignAlgo {
 func New87() (crypto.Signer, crypto.PublicKey, error) {
 	pk, sk, err := mldsa87.GenerateKey(nil)
 	if err != nil {
-		return nil, nil, errors.New(fmt.Sprintf("MLDSA87 New key failed: %v", err))
+		return nil, nil, fmt.Errorf("MLDSA87 New key failed: %v", err)
 	} // rand 为 nil，则使用 crypto/rand.Reader
 
 	return &Mldsa87Signer{sk: *sk}, &Mldsa87Verifyer{pk: *pk}, nil

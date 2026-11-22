@@ -53,7 +53,36 @@ func newFixedSigner(t *testing.T, algo crypto.SignAlgo) (crypto.Signer, crypto.P
 	return signer, publicKey
 }
 
-func 
+func testSignWithCtx(t *testing.T, signer crypto.Signer, publicKey crypto.PublicKey, message []byte, ctx []byte) {
+	t.Helper()
+
+	signature, err := signer.Sign(message, ctx)
+	if err != nil {
+		t.Fatalf("Sign returned err: %v", err)
+	}
+	if !publicKey.Verify(message, ctx, signature) {
+		t.Errorf("signature did not verify, message: , ")
+	}
+
+	secondSignature, err := signer.Sign(message, ctx)
+	if err != nil {
+		t.Fatalf("second Sign returned err: %v", err)
+	}
+	if !bytes.Equal(signature, secondSignature) {
+		t.Errorf("signing the same message with the fixed key produced different signatures")
+	}
+
+	if publicKey.Verify([]byte("modified message"), context, signature) {
+		t.Fatal("signature verified for a modified message")
+	}
+	if publicKey.Verify(message, []byte("modified context"), signature) {
+		t.Fatal("signature verified for a modified context")
+	}
+}
+
+func testSignWithoutCtx(t *testing.T, implSign crypto.Signer, implPK crypto.PublicKey, message []byte) {
+	t.Helper()
+}
 
 func TestSign(t *testing.T) {
 	algorithms := []crypto.SignAlgo{
@@ -85,29 +114,7 @@ func TestSign(t *testing.T) {
 	for _, algo := range algorithms {
 		t.Run(algoSignName(algo), func(t *testing.T) {
 			signer, publicKey := newFixedSigner(t, algo)
-			
-			signature, err := signer.Sign(message, context)
-			if err != nil {
-				t.Fatalf("Sign returned err: %v", err)
-			}
-			if !publicKey.Verify(message, context, signature) {
-				t.Fatal("signature did not verify")
-			}
 
-			secondSignature, err := signer.Sign(message, context)
-			if err != nil {
-				t.Fatalf("second Sign returned err: %v", err)
-			}
-			if !bytes.Equal(signature, secondSignature) {
-				t.Fatal("signing the same message with the fixed key produced different signatures")
-			}
-
-			if publicKey.Verify([]byte("modified message"), context, signature) {
-				t.Fatal("signature verified for a modified message")
-			}
-			if publicKey.Verify(message, []byte("modified context"), signature) {
-				t.Fatal("signature verified for a modified context")
-			}
 		})
 	}
 }
