@@ -8,7 +8,7 @@ const (
 )
 
 // HashSum 只支持 32 字节输出算法
-type HashSum [32]byte
+type HashSum = [32]byte
 
 type Hasher interface {
 	Hash(b []byte) HashSum

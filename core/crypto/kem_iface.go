@@ -24,6 +24,10 @@ type KEMPrivateKey interface {
 type KEMScheme interface {
 	// GenerateKeyPair 生成新的密钥对
 	GenerateKeyPair() (KEMPublicKey, KEMPrivateKey, error)
+	// DeriveKeyPair 从固定种子确定性派生密钥对
+	DeriveKeyPair(seed []byte) (KEMPublicKey, KEMPrivateKey)
+	// SeedSize 返回 DeriveKeyPair 所需的种子长度
+	SeedSize() int
 	// Encapsulate 用接收方公钥生成共享密钥与密文
 	Encapsulate(pk KEMPublicKey) (ciphertext, sharedSecret []byte, err error)
 	// Decapsulate 用私钥从密文恢复共享密钥

@@ -72,6 +72,15 @@ func (s *X25519MLKEM768Scheme) GenerateKeyPair() (crypto.KEMPublicKey, crypto.KE
 	return &X25519MLKEM768Pk{pk: pk}, &X25519MLKEM768Sk{sk: sk}, nil
 }
 
+func (s *X25519MLKEM768Scheme) DeriveKeyPair(seed []byte) (crypto.KEMPublicKey, crypto.KEMPrivateKey) {
+	pk, sk := s.scheme.DeriveKeyPair(seed)
+	return &X25519MLKEM768Pk{pk: pk}, &X25519MLKEM768Sk{sk: sk}
+}
+
+func (s *X25519MLKEM768Scheme) SeedSize() int {
+	return s.scheme.SeedSize()
+}
+
 func (s *X25519MLKEM768Scheme) Encapsulate(pk crypto.KEMPublicKey) (ciphertext, sharedSecret []byte, err error) {
 	// 必须把外层接口拆包成底层实现
 	wrappedPk, ok := pk.(*X25519MLKEM768Pk)

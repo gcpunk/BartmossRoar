@@ -1,7 +1,6 @@
 package ed25519
 
 import (
-	"errors"
 	"fmt"
 
 	"github.com/cloudflare/circl/sign/ed25519"
@@ -25,11 +24,11 @@ func (e2s *Ed25519Signer) Sign(msg []byte, ctx []byte) ([]byte, error) {
 	// the pack we use don't propagate en error but panic, we should check in advance
 	givenLen := len(e2s.sk)
 	if givenLen != ed25519.PrivateKeySize {
-		return nil, errors.New(fmt.Sprintf("Ed25519 Sign failed: len(sk) != PrivateKeySize: %d", givenLen))
+		return nil, fmt.Errorf("Ed25519 Sign failed: len(sk) != PrivateKeySize: %d", givenLen)
 	}
 	givenCtxLen := len(string(ctx))
 	if givenCtxLen > ed25519.ContextMaxSize {
-		return nil, errors.New(fmt.Sprintf("Ed25519 Sign failed: len(string(ctx)) > ed25519.ContextMaxSize: %d", givenCtxLen))
+		return nil, fmt.Errorf("Ed25519 Sign failed: len(string(ctx)) > ed25519.ContextMaxSize: %d", givenCtxLen)
 	}
 
 	// SignPh allow blank ctx, but SignWithCtx not
@@ -40,6 +39,10 @@ func (e2s *Ed25519Signer) Sign(msg []byte, ctx []byte) ([]byte, error) {
 
 func (e2s *Ed25519Signer) PublicKey() crypto.PublicKey {
 	return &Ed25519Verifyer{pk: e2s.sk.Public().(ed25519.PublicKey)}
+}
+
+func (e2s *Ed25519Signer) KeySize() int {
+	return 64
 }
 
 func (e2v *Ed25519Verifyer) Verify(msg, ctx, sig []byte) bool {
@@ -64,7 +67,7 @@ func (e2v *Ed25519Verifyer) Algorithm() crypto.SignAlgo {
 func New() (crypto.Signer, crypto.PublicKey, error) {
 	pk, sk, err := ed25519.GenerateKey(nil)
 	if err != nil {
-		return nil, nil, errors.New(fmt.Sprintf("Ed25519 New key failed: %v", err))
+		return nil, nil, fmt.Errorf("Ed25519 New key failed: %v", err)
 	} // rand 为 nil，则使用 crypto/rand.Reader
 
 	return &Ed25519Signer{sk: sk}, &Ed25519Verifyer{pk: pk}, nil
