@@ -1,10 +1,13 @@
 package transport
 
-type Proto byte
-type Addr string
+import "strings"
+
+type Proto = byte
+type Addr = string
 
 const (
-	TCP Proto = iota
+	Unknown Proto = iota
+	TCP
 	Tor
 )
 
@@ -21,6 +24,7 @@ type Transport interface {
 	OnRecv(handler Handler)
 	LocalAddr() NodeAddr
 	Close() error
+	Protocol() Proto
 }
 
 func ProtoToString(p Proto) string {
@@ -32,4 +36,14 @@ func ProtoToString(p Proto) string {
 	default:
 		return ""
 	}
+}
+
+func WhichProtocol(s string) Proto {
+	if strings.HasPrefix(s, "tcp://") {
+		return TCP
+	} else if strings.HasSuffix(s, ".onion") {
+		return Tor
+	}
+
+	return Unknown
 }

@@ -1,11 +1,34 @@
 {
-  "identity": "node-256-bit",
-  "signKey": [
-    "base64-encoded-signing-key",
-    "base64-encoded-signing-key"
-  ],
-  "encryptKey": [
-    "base64-encoded-encryption-key",
-    "base64-encoded-encryption-key"
+  "nodes": [
+    {
+      "identity": "node-256-bit-0",
+      "signKey": [
+        "base64-encoded-signing-key",
+        "base64-encoded-signing-key"
+      ],
+      "encryptKey": [
+        "base64-encoded-encryption-key",
+        "base64-encoded-encryption-key"
+      ],
+      "address": [
+        "tcp://ip:port",
+        "http://addr.onion"
+      ]
+    },
+    {
+      "identity": "node-256-bit-1",
+      "signKey": [
+        "base64-encoded-signing-key",
+        "base64-encoded-signing-key"
+      ],
+      "encryptKey": [
+        "base64-encoded-encryption-key",
+        "base64-encoded-encryption-key"
+      ],
+      "address": [
+        "tcp://ip:port",
+        "http://addr.onion"
+      ]
+    }
   ]
 }

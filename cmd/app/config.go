@@ -5,6 +5,10 @@ import (
 	"os"
 )
 
+type NodeSetInfo struct {
+	Nodes []NodeInfo `json:"nodes"`
+}
+
 // NodeInfo associated with core/database/nodes.go
 type NodeInfo struct {
 	Identity string `json:"identity"`
@@ -15,27 +19,27 @@ type NodeInfo struct {
 	Address    []string `json:"address"`
 }
 
-func MarshalNodeInfoToJSON(node NodeInfo) ([]byte, error) {
+func MarshalNodeSetInfoToJSON(node NodeSetInfo) ([]byte, error) {
 	return json.Marshal(node)
 }
 
-func UnmarshalJSONToNodeInfo(b []byte) (NodeInfo, error) {
-	var nodeInfo NodeInfo
+func UnmarshalJSONToNodeSetInfo(b []byte) (NodeSetInfo, error) {
+	var nodeInfo NodeSetInfo
 
 	if err := json.Unmarshal(b, &nodeInfo); err != nil {
-		return NodeInfo{}, err
+		return NodeSetInfo{}, err
 	}
 
 	return nodeInfo, nil
 }
 
-func ReadNodeInfo(path string) (NodeInfo, error) {
+func ReadNodeInfo(path string) (NodeSetInfo, error) {
 	b, err := os.ReadFile(path)
 	if err != nil {
-		return NodeInfo{}, err
+		return NodeSetInfo{}, err
 	}
 
-	return UnmarshalJSONToNodeInfo(b)
+	return UnmarshalJSONToNodeSetInfo(b)
 }
 
 type Config struct {

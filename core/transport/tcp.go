@@ -21,6 +21,10 @@ type TCPTransport struct {
 	handler   Handler
 }
 
+func (t *TCPTransport) Protocol() Proto {
+	return TCP
+}
+
 func NewTCP(addr string) (*TCPTransport, error) {
 	if addr == "" {
 		return nil, fmt.Errorf("invalid addr: %v", addr)

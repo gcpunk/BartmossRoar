@@ -11,6 +11,7 @@ import (
 
 	"github.com/erashaperavm/BartmossRoar/core/api/configs"
 	"github.com/erashaperavm/BartmossRoar/core/database"
+	"github.com/erashaperavm/BartmossRoar/core/message"
 	"github.com/erashaperavm/BartmossRoar/core/transport"
 	"github.com/erashaperavm/BartmossRoar/core/utils"
 	"github.com/spf13/cobra"
@@ -109,14 +110,20 @@ func (a *App) joinCmd() *cobra.Command {
 		Long:    "join a bartmoss roar group",
 		Example: "br join network.json",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			// check if the ntwk is joined
-			networkID := args[0]
-			strings.Trim(networkID, ".json")
-			pathToNtwk := path.Join(a.wd, "networks", networkID)
+			// read the JSON
+			networkJson := args[0]
+			networkJsonBytes, err := os.ReadFile(networkJson)
+			if err != nil {
+				return err
+			}
+
+			// check if joined
+			strings.Trim(networkJson, ".json")
+			pathToNtwk := path.Join(a.wd, "networks", networkJson)
 			if err := os.MkdirAll(filepath.Dir(pathToNtwk), 0750); err != nil {
 				return fmt.Errorf("create parent dir: %w", err)
 			}
-			err := os.Mkdir(pathToNtwk, 0750)
+			err = os.Mkdir(pathToNtwk, 0750)
 			switch {
 			case err == nil:
 				// create dir successfully
@@ -126,8 +133,66 @@ func (a *App) joinCmd() *cobra.Command {
 				return fmt.Errorf("create network dir: %w", err)
 			}
 
-			// randomly create connection with given nodes first, if nobody response
+			// unmarshal
+			nodeSetInfo, err := UnmarshalJSONToNodeSetInfo(networkJsonBytes)
+			if err != nil {
+				return err
+			}
+
+			// create connection with given nodes sequentially, if nobody response
 			// it indicates a broken network or out-date network
+			count := 0
+			for _, node := range nodeSetInfo.Nodes {
+				for _, nodeAddr := range node.Address {
+					switch transport.WhichProtocol(nodeAddr) {
+					case transport.TCP:
+						for _, t := range a.ts {
+							if t.Protocol() != transport.TCP {
+								continue
+							}
+							// get a tcp transport instance
+							err := t.Send(transport.NodeAddr{
+								Protocol: transport.TCP,
+								Address:  strings.Trim(nodeAddr, "tcp://"),
+							}, message.OnlyTryPleaseIgnore)
+							if err != nil {
+								return err
+							}
+							// success
+							count += 1
+							break
+						}
+					case transport.Tor:
+						for _, t := range a.ts {
+							if t.Protocol() != transport.Tor {
+								continue
+							}
+							// get a tor transport instance
+							err := t.Send(transport.NodeAddr{
+								Protocol: transport.Tor,
+								Address:  nodeAddr,
+							}, message.OnlyTryPleaseIgnore)
+							if err != nil {
+								return err
+							}
+							// success
+							count += 1
+							break
+						}
+					default:
+						panic("unsupported network protocol")
+					}
+				}
+			}
+
+			ratio := count / len(nodeSetInfo.Nodes)
+			println("network %v success ratio: %v", networkJson, ratio)
+
+			if count <= 2 {
+				panic("too few nodes.")
+			}
+
+			// 有较多存活节点，载入数据库
 			// todo
 
 			return nil

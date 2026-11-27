@@ -36,6 +36,10 @@ type TorTransport struct {
 	closeOnce  sync.Once
 }
 
+func (t *TorTransport) Protocol() Proto {
+	return Tor
+}
+
 // NewTor 创建 Tor 传输层。
 // connectExisting == false:
 //
