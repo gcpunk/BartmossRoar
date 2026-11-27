@@ -53,37 +53,6 @@ func newFixedSigner(t *testing.T, algo crypto.SignAlgo) (crypto.Signer, crypto.P
 	return signer, publicKey
 }
 
-func testSignWithCtx(t *testing.T, signer crypto.Signer, publicKey crypto.PublicKey, message []byte, ctx []byte) {
-	t.Helper()
-
-	signature, err := signer.Sign(message, ctx)
-	if err != nil {
-		t.Fatalf("Sign returned err: %v", err)
-	}
-	if !publicKey.Verify(message, ctx, signature) {
-		t.Errorf("signature did not verify, message: , ")
-	}
-
-	secondSignature, err := signer.Sign(message, ctx)
-	if err != nil {
-		t.Fatalf("second Sign returned err: %v", err)
-	}
-	if !bytes.Equal(signature, secondSignature) {
-		t.Errorf("signing the same message with the fixed key produced different signatures")
-	}
-
-	if publicKey.Verify([]byte("modified message"), context, signature) {
-		t.Fatal("signature verified for a modified message")
-	}
-	if publicKey.Verify(message, []byte("modified context"), signature) {
-		t.Fatal("signature verified for a modified context")
-	}
-}
-
-func testSignWithoutCtx(t *testing.T, implSign crypto.Signer, implPK crypto.PublicKey, message []byte) {
-	t.Helper()
-}
-
 func TestSign(t *testing.T) {
 	algorithms := []crypto.SignAlgo{
 		crypto.SignMLDSA44,
@@ -114,7 +83,47 @@ func TestSign(t *testing.T) {
 	for _, algo := range algorithms {
 		t.Run(algoSignName(algo), func(t *testing.T) {
 			signer, publicKey := newFixedSigner(t, algo)
+			t.Run("with context", func(t *testing.T) {
+				for _, scc := range singleCasesWithCtx {
+					signature, err := signer.Sign(scc.data, scc.ctx)
+					if err != nil {
+						t.Fatalf("Sign returned err: %v", err)
+					}
+					secondSignature, err := signer.Sign(scc.data, scc.ctx)
+					if err != nil {
+						t.Fatalf("second Sign returned err: %v", err)
+					}
 
+					if !bytes.Equal(signature, secondSignature) {
+						t.Fatal("signing the same message with the fixed key produced different signatures")
+					}
+
+					if !publicKey.Verify(scc.data, scc.ctx, signature) {
+						t.Error("signature verification failed")
+					}
+				}
+			})
+
+			t.Run("without context", func(t *testing.T) {
+				for _, sc := range singleCasesWithoutCtx {
+					signature, err := signer.Sign(sc.data, nil)
+					if err != nil {
+						t.Fatalf("Sign returned err: %v", err)
+					}
+					secondSignature, err := signer.Sign(sc.data, nil)
+					if err != nil {
+						t.Fatalf("second Sign returned err: %v", err)
+					}
+
+					if !bytes.Equal(signature, secondSignature) {
+						t.Fatal("signing the same message with the fixed key produced different signatures")
+					}
+
+					if !publicKey.Verify(sc.data, nil, signature) {
+						t.Error("signature verification failed")
+					}
+				}
+			})
 		})
 	}
 }

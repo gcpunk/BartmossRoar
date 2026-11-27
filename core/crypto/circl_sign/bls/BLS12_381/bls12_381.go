@@ -51,7 +51,17 @@ func (s *Signer) Sign(msg []byte) (crypto.Signature, error) {
 }
 
 func (s *Signer) Equal(x stdcrypto.PrivateKey) bool {
-	return s != nil && s.key != nil && s.key.Equal(x)
+	if s == nil || s.key == nil {
+		return false
+	}
+	switch other := x.(type) {
+	case *Signer:
+		return other != nil && s.key.Equal(other.key)
+	case *circlbls.PrivateKey[circlbls.G1]:
+		return s.key.Equal(other)
+	default:
+		return false
+	}
 }
 
 func (s *Signer) MarshalBinary() ([]byte, error) {
@@ -85,7 +95,17 @@ func (s *Signer) Validate() bool {
 }
 
 func (p *PublicKey) Equal(x stdcrypto.PublicKey) bool {
-	return p != nil && p.key != nil && p.key.Equal(x)
+	if p == nil || p.key == nil {
+		return false
+	}
+	switch other := x.(type) {
+	case *PublicKey:
+		return other != nil && p.key.Equal(other.key)
+	case *circlbls.PublicKey[circlbls.G1]:
+		return p.key.Equal(other)
+	default:
+		return false
+	}
 }
 
 func (p *PublicKey) MarshalBinary() ([]byte, error) {

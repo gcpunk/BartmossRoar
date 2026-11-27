@@ -7,15 +7,15 @@ import (
 	"github.com/erashaperavm/BartmossRoar/core/crypto/circl_sign/bls/BLS12_381"
 )
 
-func NewBLSSigner(algo crypto.BlsAlgo) (crypto.BlsSigner, error) {
+func NewBLSSigner(algo crypto.BlsAlgo) (crypto.BlsSigner, crypto.BlsPublicKey, error) {
 	switch algo {
 	case crypto.Bls12381:
-		signer, _, err := BLS12_381.Scheme{}.GenerateKeyPair()
+		signer, pk, err := BLS12_381.Scheme{}.GenerateKeyPair()
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
-		return signer, nil
+		return signer, pk, nil
 	default:
-		return nil, fmt.Errorf("unknown bls algo: %d", algo)
+		return nil, nil, fmt.Errorf("unknown bls algo: %d", algo)
 	}
 }
