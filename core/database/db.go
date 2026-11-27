@@ -25,7 +25,7 @@ type Options struct {
 
 // Open 打开或创建数据库。
 // 只允许一个进程持有同一路径，重复打开会返回错误。
-func Open(opts Options) (*DB, error) {
+func Open(opts Options) (*DB, DedupDB, MessagesDB, MsgIDsDB, NodeDB, PoTDB, error) {
 	badgerOpts := badger.DefaultOptions(opts.Path)
 
 	if opts.LogLevel != nil {
@@ -37,13 +37,15 @@ func Open(opts Options) (*DB, error) {
 
 	raw, err := badger.Open(badgerOpts)
 	if err != nil {
-		return nil, fmt.Errorf("badger open %q: %w", opts.Path, err)
+		return nil, DedupDB{}, MessagesDB{}, MsgIDsDB{}, NodeDB{}, PoTDB{}, fmt.Errorf("badger open %q: %w", opts.Path, err)
 	}
 
-	return &DB{
+	db := DB{
 		badger: raw,
 		path:   opts.Path,
-	}, nil
+	}
+
+	return &db, DedupDB{database: &db}, MessagesDB{database: &db}, MsgIDsDB{database: &db}, NodeDB{database: &db}, PoTDB{database: &db}, nil
 }
 
 // Close 关闭数据库。

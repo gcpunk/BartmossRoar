@@ -11,11 +11,11 @@ type NodeSetInfo struct {
 
 // NodeInfo associated with core/database/nodes.go
 type NodeInfo struct {
-	Identity string `json:"identity"`
+	Identity []byte `json:"identity"`
 
 	// two slices of keys, base64-encoded, for JSON serialization
-	SignKey    []string `json:"signKey"`
-	EncryptKey []string `json:"encryptKey"`
+	SignKey    [][]byte `json:"signKey"`
+	EncryptKey [][]byte `json:"encryptKey"`
 	Address    []string `json:"address"`
 }
 

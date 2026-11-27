@@ -20,6 +20,11 @@ import (
 type App struct {
 	cfg       Config
 	db        database.DB
+	dedupDB   database.DedupDB
+	messageDB database.MessagesDB
+	msgIDsDB  database.MsgIDsDB
+	nodesDB   database.NodeDB
+	potDB     database.PoTDB
 	wd        string
 	apiConfig configs.ApiConfig
 	ts        []transport.Transport
@@ -118,8 +123,12 @@ func (a *App) joinCmd() *cobra.Command {
 			}
 
 			// check if joined
-			strings.Trim(networkJson, ".json")
-			pathToNtwk := path.Join(a.wd, "networks", networkJson)
+			wd, err := os.Getwd()
+			if err != nil {
+				panic("can not get workdir")
+			}
+			networkID := strings.Trim(networkJson, ".json")
+			pathToNtwk := path.Join(wd, "networks", networkID)
 			if err := os.MkdirAll(filepath.Dir(pathToNtwk), 0750); err != nil {
 				return fmt.Errorf("create parent dir: %w", err)
 			}
@@ -180,7 +189,7 @@ func (a *App) joinCmd() *cobra.Command {
 							break
 						}
 					default:
-						panic("unsupported network protocol")
+						return errors.New("unsupported network protocol")
 					}
 				}
 			}
@@ -189,11 +198,37 @@ func (a *App) joinCmd() *cobra.Command {
 			println("network %v success ratio: %v", networkJson, ratio)
 
 			if count <= 2 {
-				panic("too few nodes.")
+				return errors.New("too few nodes")
 			}
 
 			// 有较多存活节点，载入数据库
-			// todo
+			// 暂时无响应的也存入，因为可能是临时掉线
+			// 可以后期使用 GC 清理
+			db, dedup, messages, msgids, nodes, pot, err := database.Open(database.Options{
+				Path: pathToNtwk,
+			})
+			if err != nil || db == nil {
+				return nil
+			}
+			defer db.Close()
+
+			a.dedupDB = dedup
+			a.messageDB = messages
+			a.msgIDsDB = msgids
+			a.nodesDB = nodes
+			a.potDB = pot
+
+			for _, node := range nodeSetInfo.Nodes {
+				err := a.nodesDB.RecordNode(database.NodeRecord{
+					Identity:   database.ID(node.Identity),
+					SignKey:    node.SignKey,
+					EncryptKey: node.EncryptKey,
+					Address:    node.Address,
+				})
+				if err != nil {
+					return err
+				}
+			}
 
 			return nil
 		},
@@ -210,7 +245,7 @@ func startCmd() *cobra.Command {
 				2. Sync and rotate ML-KEM public keys
 				3. Tick dummy packets at 3-7s intervals
 				4. Handle send, gossip and receive`,
-		Example: "br start",
+		Example: "br start network_id",
 		RunE: func(cmd *cobra.Command, args []string) error {
 
 			return nil

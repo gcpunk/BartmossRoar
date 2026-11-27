@@ -4,8 +4,6 @@ import (
 	"bytes"
 	"encoding/gob"
 	"fmt"
-
-	"github.com/erashaperavm/BartmossRoar/core/crypto"
 )
 
 type ID = [32]byte
@@ -18,22 +16,17 @@ type NodeDB struct {
 type NodeRecord struct {
 	Identity ID
 
-	// MldsaKey This will be more credible than Keys Table since neighbor-nodes-first principle
-	// ptr type will be transformed to real data when writing into db
-	// here impl slices since network delay, served for PoT,
-	// because PoT lifetime is longer than a SignKey and
-	// its update cycle is async
-	SignKey    []crypto.PublicKey
-	EncryptKey []crypto.SymmetricCipherKey
+	SignKey    [][]byte // .Bytes()
+	EncryptKey [][]byte // [:]
 
 	// Multi-addresses for a node, which can be used for different network protocols or interfaces
 	// or prevent a single point of failure, or for redundancy and load balancing
 	Address []string
 }
 
-// RecordChannelNode stores a node record in the database.
+// RecordNode stores a node record in the database.
 // Important: The Identity field of the NodeRecord is used as the key for storage, and it is not stored in the value itself.
-func (db *NodeDB) RecordChannelNode(node NodeRecord) error {
+func (db *NodeDB) RecordNode(node NodeRecord) error {
 	nd := NodeRecord{
 		SignKey:    node.SignKey,
 		EncryptKey: node.EncryptKey,
@@ -51,9 +44,9 @@ func (db *NodeDB) RecordChannelNode(node NodeRecord) error {
 	return nil
 }
 
-// GetChannelNode retrieves a node record from the database by its ID.
+// GetNode retrieves a node record from the database by its ID.
 // Important: The returned NodeRecord does not include the Identity field, as it is already known from the ID used for retrieval.
-func (db *NodeDB) GetChannelNode(id ID) (*NodeRecord, error) {
+func (db *NodeDB) GetNode(id ID) (*NodeRecord, error) {
 	b, err := db.database.Get(Nodes, id[:])
 	if err != nil {
 		return nil, fmt.Errorf("load channel node: %w", err)
