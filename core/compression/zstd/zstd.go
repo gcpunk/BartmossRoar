@@ -10,22 +10,36 @@ import (
 )
 
 type ZSTDCompressor struct {
-	Encoder *zstd.Encoder
-	Decoder *zstd.Decoder
+	Encoder  *zstd.Encoder
+	Decoder  *zstd.Decoder
+	encoders sync.Pool
+	decoders sync.Pool
 }
 
 func (c *ZSTDCompressor) CompressStream(in io.Reader, out io.Writer) error {
-	enc, err := zstd.NewWriter(out)
+	if in == nil || out == nil {
+		return errors.New("input or output stream is nil")
+	}
+
+	enc, ok := c.encoders.Get().(*zstd.Encoder)
+	if !ok {
+		var err error
+		enc, err = zstd.NewWriter(nil, zstd.WithEncoderConcurrency(1))
+		if err != nil {
+			return err
+		}
+	}
+	enc.Reset(out)
+
+	_, err := io.Copy(enc, in)
+	if err == nil {
+		err = enc.Close()
+	}
+	enc.Reset(nil)
+	c.encoders.Put(enc)
 	if err != nil {
 		return err
 	}
-	defer enc.Close()
-
-	_, err = io.Copy(enc, in)
-	if err != nil {
-		return err
-	}
-
 	return nil
 }
 
@@ -59,17 +73,31 @@ func (c *ZSTDCompressor) CompressManyStream(in []io.Reader, out []io.Writer) []e
 }
 
 func (c *ZSTDCompressor) ExtractStream(in io.Reader, out io.Writer) error {
-	dec, err := zstd.NewReader(in)
-	if err != nil {
-		return err
-	}
-	defer dec.Close()
-
-	_, err = io.Copy(out, dec)
-	if err != nil {
-		return err
+	if in == nil || out == nil {
+		return errors.New("input or output stream is nil")
 	}
 
+	dec, ok := c.decoders.Get().(*zstd.Decoder)
+	if !ok {
+		var err error
+		dec, err = zstd.NewReader(nil, zstd.WithDecoderConcurrency(1))
+		if err != nil {
+			return err
+		}
+	}
+	if err := dec.Reset(in); err != nil {
+		c.decoders.Put(dec)
+		return err
+	}
+
+	_, err := io.Copy(out, dec)
+	if err != nil {
+		dec.Reset(nil)
+		c.decoders.Put(dec)
+		return err
+	}
+	dec.Reset(nil)
+	c.decoders.Put(dec)
 	return nil
 }
 
@@ -151,9 +179,9 @@ func (c *ZSTDCompressor) Algorithm() compression.CompressAlgo {
 }
 
 func NewZSTDEncoder() (*zstd.Encoder, error) {
-	return zstd.NewWriter(nil)
+	return zstd.NewWriter(nil, zstd.WithEncoderConcurrency(1))
 }
 
 func NewZSTDDecoder() (*zstd.Decoder, error) {
-	return zstd.NewReader(nil)
+	return zstd.NewReader(nil, zstd.WithDecoderConcurrency(1))
 }

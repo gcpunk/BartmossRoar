@@ -22,14 +22,14 @@ func (c *LZMA2Compressor) CompressStream(in io.Reader, out io.Writer) error {
 	if err != nil {
 		return err
 	}
-	defer w.Close()
 
 	_, err = io.Copy(w, in)
 	if err != nil {
+		_ = w.Close()
 		return err
 	}
 
-	return nil
+	return w.Close()
 }
 
 // CompressManyStream supports concurrent compression for each stream, it will compress each origin concurrently.
