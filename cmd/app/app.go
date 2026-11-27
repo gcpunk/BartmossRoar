@@ -17,11 +17,11 @@ import (
 )
 
 type App struct {
-	cfg Config
-	db  database.DB
-	wd  string
+	cfg       Config
+	db        database.DB
+	wd        string
 	apiConfig configs.ApiConfig
-	ts  []transport.Transport
+	ts        []transport.Transport
 }
 
 func NewApp() *App {
